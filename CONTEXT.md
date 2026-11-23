@@ -4,14 +4,14 @@ Persistent source of truth for contributors and future Cursor Agent sessions.
 
 | | |
 | --- | --- |
-| Last updated | 2026-11-22 |
-| Current phase | 0 — documentation and planning |
-| Implementation | Not started |
-| Simulations run by this project | None |
+| Last updated | 2026-11-23 |
+| Current phase | 1 — local headless CAD, mesh, and CalculiX proof |
+| Implementation | Phase 1 proof under `backend/`. No API, database, or UI |
+| Simulations run by this project | One cantilever and one filleted L-bracket, recorded in section 9. Not a validated design method |
 
 Read this file before changing architecture, dependencies, geometry, meshing, or solver behavior. Read [README.md](README.md) for the product summary. If a coding session discovers that this file is wrong, update it in the same session with the evidence, and label anything still unmeasured as an open question.
 
-This document plans the work. It does not report test results.
+Measured Phase 1 results are in section 9 and in the open-question answers below. Anything not tied to those runs is still a plan.
 
 ## 1. Project Identity
 
@@ -46,16 +46,13 @@ The planned product combines parametric CAD, automated meshing, linear finite-el
 
 ### Current phase
 
-Phase 0 is complete when `README.md` and this file exist and are consistent. No later phase is authorized.
+Phase 0 was completed on 2026-11-22. Phase 1 was approved on 2026-11-23 and the exit criteria are recorded in section 9. Phase 2 is not approved.
 
 ### Existing files
 
-After Phase 0, the repository root is expected to contain only:
+Phase 0 added `README.md` and `CONTEXT.md`. Phase 1 added `backend/` (package, tests, and `requirements.lock`), `.gitignore`, and a gitignored CalculiX directory under `tools/calculix/`. Job output is under gitignored `artifacts/phase1/`. There is still no `LICENSE`, frontend, API package, materials library, or search package.
 
-- `README.md`
-- `CONTEXT.md`
-
-The Git repository was already initialized on branch `main` with no commits and no tracked files when Phase 0 started. Phase 0 does not add a license, dependency manifest, source tree, or Git commit.
+The Git repository was initialized on branch `main` before Phase 0. Phase 1 did not create a commit.
 
 ### Environment observed on 2026-11-22
 
@@ -77,26 +74,23 @@ Observed locally. These are machine facts, not project requirements.
 
 The system packages are incidental. Phase 1 must use a project virtual environment. Do not install LoadCAD dependencies into the global interpreter.
 
-The repository path contains a space. Phase 1 must run `ccx` and Gmsh against a job path on this machine and record whether the space causes failures. If it does, job directories should live under a space-free root even if the source tree does not.
+The repository path contains a space. Q9 was checked on 2026-11-23. A one-tet `ccx_static` solve and a Gmsh box write both succeeded under `artifacts/phase1/path-with-space` and under `C:\Temp\loadcad-phase1\path-nospace`. The space did not break those two operations. Job output for the beam and bracket stayed under the repository path.
 
 ### Implemented functionality
 
 - Product scope, pipeline, unit system, and phase gates are written down.
-- Technology choices for the MVP have been made in writing, including several deliberate rejections of the originally suggested services.
+- A project virtual environment and `backend/requirements.lock`.
+- Filleted L-bracket and rectangular-cantilever constructors, STEP and STL export, Gmsh import, geometric face match, `C3D10` decks, `ccx` execution, FRD parsing, and von Mises post-processing.
+- One recorded cantilever solve and one recorded bracket solve. `decision_metric` and `estimated_safety_factor` are null in both result files.
+- Automated tests for units, geometry, mesh order, face match, solver I/O, and the two real solves. On 2026-11-23 the project environment passed 22 tests in 5.87 seconds, and a clean environment installed from the lockfile passed the same 22 in 17.22 seconds.
 
 ### Unimplemented functionality
 
-Everything computational and everything user-facing, including:
-
-- Parametric bracket generation
-- STEP and STL export
-- Meshing and face matching
-- CalculiX input, execution, and result parsing
-- Safety-factor calculation
+- Safety-factor calculation and an approved `decision_metric`
+- Mesh-refinement studies
+- Approved material cards
 - Parameter search
 - HTTP API, database, web UI, authentication, and deployment
-- Automated tests and analytical benchmarks
-- Approved material cards
 
 ### Known blockers
 
@@ -172,7 +166,7 @@ The API, once it exists, may only pass a validated `DesignRequest` into the same
 
 ### Planned repository structure
 
-Do not create this tree until Phase 1 is approved. Names can change before the first code commit if this section is updated in the same change.
+Phase 1 created `backend/pyproject.toml`, `backend/requirements.lock`, `backend/src/loadcad/`, and flat test modules under `backend/tests/`. It did not create `materials/`, `optimization/`, `api/`, or `frontend/`. The test files are not split into the subfolders drawn below.
 
 ```text
 loadcad/
@@ -931,15 +925,15 @@ SciPy optimizers are unnecessary for a two-variable grid. Revisit them only if t
 
 | ID | Question | Blocks |
 | --- | --- | --- |
-| Q1 | Which Windows `ccx` 2.22 binary runs on this machine, and what is its checksum? | Phase 1 |
-| Q2 | Does STEP import preserve millimetres with the installed build123d and Gmsh pair? | Phase 1 |
-| Q3 | Do the proposed fingerprint tolerances uniquely match bracket faces after holes and a fillet? | Phase 1 |
-| Q4 | Does Gmsh's 10-node tet connectivity match CalculiX `C3D10` on one inspected element? | Phase 1 |
-| Q5 | What displacement and stress differences remain between a slender cantilever solid model and Timoshenko beam theory after refinement? | Phase 1–2 |
+| Q1 | Which Windows `ccx` 2.22 binary runs on this machine, and what is its checksum? | Answered 2026-11-23. See below |
+| Q2 | Does STEP import preserve millimetres with the installed build123d and Gmsh pair? | Answered 2026-11-23 for the beam and the Phase 1 bracket. See below |
+| Q3 | Do the proposed fingerprint tolerances uniquely match bracket faces after holes and a fillet? | Answered 2026-11-23 for the Phase 1 fixture. Not a sweep of every legal bracket |
+| Q4 | Does Gmsh's 10-node tet connectivity match CalculiX `C3D10` on one inspected element? | Answered 2026-11-23. Raw Gmsh order does not match. `swap_last_two` does |
+| Q5 | What displacement and stress differences remain between a slender cantilever solid model and Timoshenko beam theory after refinement? | Displacement recorded for one 5 mm mesh. Refinement and a stress band remain Phase 2 |
 | Q6 | Which von Mises sample becomes `decision_metric`? | Phase 2 |
 | Q7 | What mesh-convergence band is acceptable for that metric? | Phase 2 |
 | Q8 | Which cited numbers go into the first aluminum, PLA, and PETG cards? | Phase 2 |
-| Q9 | Does the user-profile space in `C:\Users\Martin Tran` break `ccx` or Gmsh if the job directory stays under the repository? | Phase 1 |
+| Q9 | Does the user-profile space in `C:\Users\Martin Tran` break `ccx` or Gmsh if the job directory stays under the repository? | Answered 2026-11-23 for a box mesh and a one-tet solve. It did not break those runs |
 | Q10 | Project license, and is the Gmsh Python API acceptable for the intended distribution? | Before any proprietary release. Not a Phase 1 code blocker |
 | Q11 | What minimum fillet radius still meshes with a stable stress result for the allowed thickness range? | Phase 2 |
 | Q12 | Does a hole near the fillet make a face-exclusion stress metric unconservative? | Phase 2 |
@@ -1029,6 +1023,98 @@ A phase starts only when the previous phase's exit criteria are recorded in this
 5. Face match either succeeds uniquely or fails the test. A silent wrong face is a failed phase.
 6. `C3D10` node order is either confirmed on a sample element or listed as a remaining blocker that prevents stress from being treated as meaningful.
 7. README status stays pre-MVP and does not claim a validated design method.
+
+**Status:** Completed on 2026-11-23 for the fixture below. Phase 2 has not started. No safety factor was emitted. No displacement pass band was declared.
+
+#### Environment that ran the proof
+
+| Item | Measured value |
+| --- | --- |
+| Python | 3.12.6, virtual environment `.venv`. Dependencies were not installed into the global interpreter |
+| Lockfile | `backend/requirements.lock`, a `pip freeze` of that environment with the editable `loadcad` line removed. Direct requirements are build123d 0.13.0, gmsh 4.15.2, meshio 5.3.5, numpy 2.5.5, and pytest 9.2.0. build123d pulled scipy 1.18.1 and scikit-learn 1.9.1. LoadCAD does not import them |
+| Platform | `Windows-11-10.0.26300-SP0` |
+| `ccx` | `tools/calculix/dist/calculix_2.22_4win/ccx_static.exe`. The process banner, read from stdout because `job.dat` is only the `*NODE PRINT` table, is `CalculiX Version 2.22, Copyright(C) 1998-2024 Guido Dhondt`. The FRD header says `Version 2.22`. The same header reports compile time `Sun Aug  4 19:39:24     2024`. The log reports PaStiX 6.0.1. `OMP_NUM_THREADS=1` |
+| Checksums | Zip `https://www.dhondt.de/calculix_2.22_4win.zip` SHA-256 `a1f91281944c96d6cd914cc020421e8ae65973b3e15d055dc63a3e3e3066d281`. `ccx_static.exe` SHA-256 `a326dfb2efe888e35e2195da263761c0b646b10e452b8998f36ea38da612a277` |
+| Binary not used | `ccx_dynamic.exe` is in the same directory. Its `README_Install` says it needs `mkl_rt.2.dll`, which the zip does not contain. That executable was not run. Invoking `ccx` with no arguments prints a usage line and exits 201, so that output was not used as the version |
+
+A UTF-8 BOM at the start of the lockfile was removed on 2026-11-23. It would have made the first package name invalid to pip. After that fix, a new virtual environment at `C:\Temp\loadcad-phase1\venv-lock` installed the lockfile, and the same 22 tests passed there in 17.22 seconds. That run used the source tree on `PYTHONPATH`. It did not reinstall the editable `loadcad` package, because the lockfile intentionally omits that line.
+
+#### Q1 and Q9
+
+Q1 is the static binary, path, banner, and checksums above. Q9: Gmsh 4.15.2 wrote a box mesh, and `ccx_static` solved a one-element deck, in both `C:\Users\Martin Tran\Documents\loadcad\artifacts\phase1\path-with-space` and `C:\Temp\loadcad-phase1\path-nospace`. Both `ccx` runs returned 0 and wrote an FRD file. The beam and bracket jobs then ran under the repository path, which contains a space.
+
+#### Q4, node order
+
+Gmsh 4.15.2 `getElementProperties(11)` reports tetrahedron 10 reference coordinates:
+
+| Gmsh node | Reference coordinate | CalculiX `C3D10` role |
+| --- | --- | --- |
+| 1 | (0, 0, 0) | corner 1 |
+| 2 | (1, 0, 0) | corner 2 |
+| 3 | (0, 1, 0) | corner 3 |
+| 4 | (0, 0, 1) | corner 4 |
+| 5 | (0.5, 0, 0) | midside 1-2 |
+| 6 | (0.5, 0.5, 0) | midside 2-3 |
+| 7 | (0, 0.5, 0) | midside 3-1 |
+| 8 | (0, 0, 0.5) | midside 1-4 |
+| 9 | (0, 0.5, 0.5) | midside 3-4, which is CalculiX node 10 |
+| 10 | (0.5, 0, 0.5) | midside 2-4, which is CalculiX node 9 |
+
+The raw Gmsh connectivity is therefore not CalculiX order. The map `swap_last_two`, indexes `(0, 1, 2, 3, 4, 5, 6, 7, 9, 8)`, is the first candidate that a straight tetrahedron in each proof mesh satisfied. That same map was applied to every element, including curved ones. Curved midside nodes are not chord midpoints, so they were not used to choose the map. Both result files store `c3d10_raw_gmsh_order_matches: false` and metadata `c3d10_node_order: "swap_last_two"`.
+
+Surface triangles use Gmsh type 9 order: three corners, then midsides of edges 1-2, 2-3, and 3-1. `getElementProperties(9)` returns those six nodes as parameter pairs, not as the garbage that a 3-D reading of the same array produces. Each proof mesh required at least one straight face triangle to match that order before the curved triangles were accepted.
+
+#### Q2, units
+
+The Phase 1 bracket STEP file contains the tokens `MILLI` and `METRE`. That check is in `backend/tests/test_geometry.py`, and that test passed. Gmsh import uses millimetre target units. The imported bounding boxes agree with the CAD boxes well inside the 0.05 mm scale gate. The stored bracket mesh box is about `-1e-7` to `60.0000001` mm against CAD `(0, 0, 0)` to `(60, 30, 60)`. The cantilever box has the same `1e-7` mm noise. A short beam, length 40 mm and element size 4 mm, is asserted within `1e-4` mm.
+
+#### Q5, one cantilever mesh
+
+This is one mesh, not a refinement study. No pass band is declared.
+
+| Input | Value |
+| --- | --- |
+| Section | 10 mm by 10 mm, length 200 mm, centered on Y and Z, X from 0 to 200 |
+| Material used for the solve | E = 210000 MPa, nu = 0.3. Benchmark placeholder, not an approved card |
+| Tip load | 100 N in -Z, as consistent `C3D10` nodal forces on the tip face. Not a pressure |
+| Element size | 5 mm |
+| Mesh | 1839 nodes, 794 `C3D10` elements, minimum SICN 0.328 |
+| Tip sample | Node 390, nearest the tip center. `uz = -1.51964` mm. Downward deflection 1.51964 mm |
+| Euler-Bernoulli tip | 1.5238095238095237 mm. Relative error `(FEA - theory) / theory = -0.0027362499999998777` |
+| Timoshenko tip | 1.5267809523809523 mm, shear coefficient 6/5. Relative error `-0.004677129597285207` |
+| Midspan axial sample | Beam theory `sxx` magnitude 60 MPa. Mean of 22 top samples 59.847759090909086 MPa. Mean of 22 bottom samples -59.90078181818182 MPa. Informational, not a pass/fail |
+| Peak nodal von Mises | 121.5676136507051 MPa at node 1176. Stored only. Not a decision metric |
+| Fixed-face reactions | Sum about `(0, 0, 100)` N. `reaction + applied` residual relative to 100 N is `8.51098701878659e-06` |
+| CalculiX time | 0.214586 s in the stored solver log. This is CalculiX's own timer for that run, not the meshing time |
+
+The opening block of `ccx.log` says its element count is an estimated upper bound. That line says 822 elements. The deck contains 794 `C3D10` records. The deck contains no `*MPC` card.
+
+#### Q3 and the bracket solve
+
+Fixture: length 60 mm, height 60 mm, width 30 mm, thickness 5 mm, fillet radius 3 mm, one 5 mm vertical hole and one 5 mm horizontal hole, 100 N in `(0, 0, -1)`, element size 2.5 mm, same placeholder E and nu. `allowable_stress_mpa`, `target_safety_factor`, `decision_metric`, and `estimated_safety_factor` are null.
+
+| Result | Measured value |
+| --- | --- |
+| CAD volume | 17111.59295503332 mm³ |
+| Face match | `mounting_outer` tag 8 only, `horizontal_top` tag 7 only. The sets are disjoint |
+| Mesh | 12576 nodes, 6769 `C3D10` elements, minimum SICN 0.151 |
+| Pressure | 0.06481312214663258 MPa on 1542.8974363210118 mm² of corner-triangle area, so the requested resultant is 100 N |
+| Peak displacement | 0.03503132794317959 mm at node 574 |
+| Peak nodal von Mises | 22.978311865007452 MPa at node 2223. Not a decision metric |
+| Fixed-face reactions | Z component 99.83760273861984 N. `reaction + applied` leaves -0.16239726138016408 N in Z. Relative residual 0.001623972744233981. X and Y residuals are about 1e-4 N or smaller |
+| CalculiX time | 1.087509 s in the stored solver log. This is CalculiX's own timer for that run, not the meshing time |
+
+The bracket residual is a load check. It does not prove which face was loaded. The fingerprint match is the face-identity evidence. The residual was not isolated further. One candidate is the difference between corner-triangle area and the quadratic face area CalculiX integrates around the hole. That split was not measured separately.
+
+The solver log's estimated upper bound says 8173 elements. The deck contains 6769 `C3D10` records.
+
+Job directories `artifacts/phase1/beam` and `artifacts/phase1/bracket` contain the request, status, provenance, geometry log, Gmsh log, CalculiX log, STEP, STL, face map, mesh, mesh metadata, `job.inp`, `job.frd`, `job.dat`, `job.sta`, and `results/results.json`. Both statuses are `completed`. A stale beam `failure.log` from an earlier FRD parse error was removed after the successful rerun. The parser now accepts CalculiX 12-character fields, including a leading minus glued to the previous field, and reads reactions from the `FORC` block (`F1`, `F2`, `F3`) that `*NODE FILE` writes for `RF`.
+
+Mesh files are Gmsh 2.2. meshio 5.3.5 rejected a Gmsh 4.1 file that carried physical groups, with incompatible cell data `gmsh:physical`. The 2.2 short-beam file was read successfully.
+
+#### What Phase 1 does not claim
+
+The cantilever is one mesh size. The bracket has no closed-form stress result. Nodal von Mises values are post-processed from FRD stress components. They are not a safety factor, not a certified stress, and not evidence that the design is adequate. README status stays pre-MVP.
 
 ### Phase 2: Materials, boundary conditions, and simulation validation
 
@@ -1211,25 +1297,31 @@ Future agents working on this repository follow these rules.
 
 ## 13. Next Actions
 
-Phase 1 is the next implementation phase. Do not start it without explicit approval. When approval is given, use this checklist.
+Phase 1 was approved on 2026-11-23 and the checklist below was carried out. Phase 2 is not approved. Do not start the material library, the search, the API, or the UI without a new approval.
 
-1. Create a project-local virtual environment with Python 3.12. Do not install into the global interpreter.
-2. Add the smallest Phase 1 dependency set: build123d, Gmsh, NumPy, meshio, and pytest. Pin the versions that were actually installed. Leave FastAPI, React, SciPy, and a database out.
-3. Obtain one CalculiX 2.22 `ccx` for Windows. Record the download origin, file checksum, version banner, and configured path. Answer Q1.
-4. Run `ccx` and a trivial Gmsh import from a directory under `C:\Users\Martin Tran\Documents\loadcad` and from a space-free directory. Record Q9.
-5. Implement the rectangular cantilever and the analytical Euler-Bernoulli and Timoshenko displacements in code, with unit tests for the formulas.
-6. Mesh and solve the cantilever with `C3D10`. Confirm one element's node order against the CalculiX convention. Answer Q4.
-7. Parse displacement and nodal stress components from the real output files. Compute von Mises stress. Store `max_nodal_von_mises_MPa` only. Do not emit a safety factor.
-8. Record measured displacement error, mesh size, and tool versions in this file. Answer the displacement half of Q5 as far as the beam goes. Do not declare a tolerance band until the refinement runs exist; a single mesh is not a convergence study.
-9. Implement the filleted L-bracket constructor with the section 5 coordinates, one positive fillet, and an optional hole fixture.
-10. Export STEP and STL in millimetres. Import STEP into Gmsh. Assert the bounding box. Answer Q2.
-11. Match `mounting_outer` and `horizontal_top`. Fail if the match is not unique. Answer Q3 for that fixture.
-12. Solve the bracket with the mounting face fixed and a negative-Z pressure on the top face whose resultant equals the requested force. Sum the fixed-face reactions and record the imbalance. Treat balance as a necessary check, not as proof that the loaded face was the intended one.
-13. Save the full job directory layout from section 3.
-14. Update this file and the status section of `README.md`. List what ran, what failed, the versions, and the open questions that remain.
-15. Stop. Do not start the material library, the search, the API, or the UI inside the same change set unless the user explicitly expands the phase.
+1. Project virtual environment `.venv`, Python 3.12.6. Not the global interpreter.
+2. Direct packages: build123d, Gmsh, NumPy, meshio, and pytest, pinned in `backend/requirements.lock`. FastAPI, React, and a database were not added. SciPy and scikit-learn are present only because build123d depends on them. LoadCAD does not import them.
+3. CalculiX 2.22 `ccx_static.exe` recorded in section 9. Q1 is answered.
+4. Path-space probe recorded. Q9 is answered for that probe.
+5. Cantilever constructor and Euler-Bernoulli / Timoshenko formulas, with unit tests.
+6. `C3D10` solve. Q4 is answered: use `swap_last_two`, not raw Gmsh order.
+7. FRD displacement, stress, and `FORC` reactions parsed. Von Mises stored. Safety factor omitted.
+8. Displacement error for the single 5 mm mesh recorded. No tolerance band.
+9. Filleted L-bracket fixture with two holes.
+10. STEP and STL in millimetres. Import bounding box checked. Q2 is answered for these solids.
+11. `mounting_outer` and `horizontal_top` matched as disjoint tag sets on the fixture. Q3 is answered for that fixture only.
+12. Bracket solved. Fixed-face reaction residual recorded in section 9. Balance is not treated as proof of face identity.
+13. Job directories written under `artifacts/phase1/beam` and `artifacts/phase1/bracket`.
+14. This file and `README.md` updated from those runs.
+15. Stop.
 
-Phase 1 is done only when the exit criteria in section 9 are met or the remaining gaps are written here as blockers.
+Remaining gaps, none of which authorize Phase 2 by themselves:
+
+- Q5 still needs a refinement series before any displacement or stress band exists.
+- Q6, Q7, Q8, Q10, Q11, and Q12 are open.
+- The bracket reaction is short by 0.162 N on a 100 N load. The cause was not isolated.
+- The planned rigid-body solver test, with no restraint, was not added.
+- `cadgmsh` was not tried. Direct STEP import worked on these two solids.
 
 ## Source notes from Phase 0
 
@@ -1238,7 +1330,7 @@ Checked on 2026-11-22 from public documentation and the local machine. These not
 - build123d is Apache-2.0 and exports STEP in a chosen unit, defaulting to millimetres, and STL as a unitless triangle file. Face labels on a constructed solid are not a reliable identity across `faces()` or STEP `ADVANCED_FACE` entities.
 - Gmsh 4.15.2 is GPL-2.0-or-later. The official manual documents `pip install gmsh`, Open CASCADE import, and physical groups. If physical groups exist, exporters usually write only grouped entities.
 - CalculiX is GPL-2.0. The 2.21 manual describes `C3D10`, unitless input, nodal FRD output, and more accurate element quantities at integration points. Project discussion with the CalculiX author states that von Mises stress is computed by the post-processor from stress components.
-- conda-forge has published a Windows CalculiX 2.22 package. A discourse thread on 2025-09-23 pointed Windows users at a `dhondt.de` zip. This project has not downloaded either one.
+- conda-forge has published a Windows CalculiX 2.22 package. A discourse thread on 2025-09-23 pointed Windows users at a `dhondt.de` zip. Phase 0 had not downloaded either one. Phase 1 downloaded the `dhondt.de` zip named in section 9 and ran `ccx_static.exe`. The conda-forge package was not used.
 - meshio is MIT and lists Gmsh and Abaqus inputs among its formats. `.frd` was not in that list.
 - `cadgmsh` 0.4.0 exists, is MIT, and is not adopted.
 - Local commands showed Python 3.12.6 and Git 2.45.1, and did not find `ccx`, `gmsh`, or conda on `PATH`.

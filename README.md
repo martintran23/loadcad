@@ -2,9 +2,9 @@
 
 **Describe what a part needs to withstand. LoadCAD designs and simulates it.**
 
-**Status: pre-MVP. Phase 0, documentation only.**
+**Status: pre-MVP. Phase 1 is a local headless proof, not a product.**
 
-LoadCAD has no application code yet. It has not generated a part, meshed a solid, or run a finite-element analysis. Nothing in this repository is a simulation result, a certified design, or a measured performance claim.
+A project virtual environment can build one hard-coded filleted L-bracket and one rectangular cantilever, mesh them, and run CalculiX. The numbers from those two runs are in [CONTEXT.md](CONTEXT.md). They are single-mesh numerical results under placeholder material constants. They are not a certified design, a safety factor, or a validated design method.
 
 The engineering source of truth for contributors and future coding sessions is [CONTEXT.md](CONTEXT.md). This README explains the product and the planned architecture. Where the two files disagree, `CONTEXT.md` wins until both are updated together.
 
@@ -154,14 +154,14 @@ Storage for the MVP is the job directory. SQLite is the planned index once an AP
 
 ## Technology stack
 
-The stack below was reviewed during Phase 0. "Selected" means selected for the plan, not installed for this project.
+The stack below was reviewed during Phase 0. Phase 1 installed the numerical tools in a project virtual environment. FastAPI, React, a database, and Docker are still not part of the project.
 
 | Area | Choice | Phase 0 decision |
 | --- | --- | --- |
 | Language | Python 3.11 or newer. This machine has Python 3.12.6 | Selected for the numerical pipeline |
 | CAD | build123d on Open CASCADE | Selected. Apache-2.0 library, Open CASCADE under LGPL-2.1 with the OCCT exception |
 | Meshing | Gmsh 4.x through its Python API | Selected for local development. GPL-2.0-or-later; see License |
-| FEA | CalculiX CrunchiX (`ccx`), linear static analysis | Selected. GPL-2.0. Not installed on this machine |
+| FEA | CalculiX CrunchiX (`ccx`), linear static analysis | Selected. GPL-2.0. Phase 1 runs the recorded `ccx_static.exe` from section 9 of `CONTEXT.md` |
 | Mesh helper | meshio and NumPy | Selected. The CalculiX deck and the result reader are project code; meshio does not replace them |
 | Optimization numerics | Plain deterministic parameter search first | SciPy is deferred until a search actually needs it |
 | API | FastAPI and Pydantic | Deferred to Phase 4 |
@@ -170,9 +170,9 @@ The stack below was reviewed during Phase 0. "Selected" means selected for the p
 | Queue | A subprocess with a timeout | Celery rejected until concurrency requires it |
 | Deployment | The developer machine | Docker is a later reproducibility aid. Free hosting tiers are not a plan for running analysis |
 
-build123d, Gmsh, and CalculiX are a practical combination because they meet through files and open geometry kernels: STEP or BREP into Gmsh's Open CASCADE kernel, then nodes and elements into a CalculiX input deck. Face names do not reliably survive that path. The bracket generator will record geometric fingerprints and rematch faces after import. That match is a design requirement, and it has not been tested.
+build123d, Gmsh, and CalculiX meet through files: STEP into Gmsh's Open CASCADE kernel, then nodes and elements into a CalculiX deck written by this project. Face names do not survive that path. The proof records geometric fingerprints and rematches faces after import. On the one Phase 1 bracket, the mounting face and the loaded top face matched as two disjoint surface sets. That is a fixture result, not a claim about every future bracket.
 
-`ccx` is not available as a normal Python package. Phase 1 has to obtain a Windows CalculiX 2.22 binary and record the exact build before any bracket result is interpreted. Candidate sources are listed in `CONTEXT.md`. None of them has been downloaded or run by this project.
+`ccx` is not a Python package. Phase 1 uses the Windows CalculiX 2.22 static executable recorded in `CONTEXT.md`, including its checksum and the version line the program printed.
 
 ## Engineering and simulation limitations
 
@@ -181,10 +181,10 @@ Every future result screen and report needs to stay compatible with the followin
 - The analysis is linear, static, isotropic, and small-displacement. It is not a nonlinear, dynamic, fatigue, buckling, or contact analysis.
 - Fixing the entire mounting face is stiffer and different from a bolted joint.
 - A force applied as pressure is supported only when it is normal to the loaded face.
-- Ten-node tetrahedra (`C3D10`) are the planned element. Linear tetrahedra are a known poor default for this kind of stress result and are not the decision model.
+- Ten-node tetrahedra (`C3D10`) are the element used in the proof. Linear tetrahedra are a known poor default for this kind of stress result and are not the decision model.
 - Re-entrant corners without a fillet make the elastic stress unbounded as the mesh is refined. Simulation jobs require a positive fillet radius.
 - Peak stress at a restraint, a load, or a hole can be a numerical singularity. The reported metric has to be defined and compared across mesh sizes.
-- CalculiX writes stress components. LoadCAD will compute von Mises stress during post-processing. Averaged nodal values and integration-point values are different quantities; the result must name which one it used.
+- CalculiX writes stress components. The proof computes nodal von Mises stress from those components. Averaged nodal values and integration-point values are different quantities. The stored peak is the nodal value.
 - Filament materials such as PLA and PETG are anisotropic and process-dependent when printed. An isotropic card is an approximation, not a description of a printed part.
 - A safety factor from this model is not a certification, a guarantee of safety, or a substitute for physical testing.
 - A completed solver run only proves that this particular numerical problem returned a solution.
@@ -193,11 +193,11 @@ Every future result screen and report needs to stay compatible with the followin
 
 | Item | State |
 | --- | --- |
-| Phase | 0, documentation and planning |
-| Application source | None |
-| Dependencies installed for LoadCAD | None. No project environment or lockfile |
-| CAD, mesh, or FEA runs performed by LoadCAD | None |
-| Tests | None |
+| Phase | 1 local proof recorded. Pre-MVP. Phase 2 has not started |
+| Application source | `backend/` headless pipeline only. No API and no UI |
+| Dependencies | Project virtual environment and `backend/requirements.lock`. CalculiX binary under `tools/calculix/` |
+| CAD, mesh, or FEA runs | One cantilever and one L-bracket, stored under `artifacts/phase1/`. Single mesh size each. No safety factor |
+| Tests | 22 passed on 2026-11-23, including the two real solver runs |
 | Hosted service | None |
 | License | Not selected |
 
@@ -208,7 +208,7 @@ Observed on the development machine during Phase 0: Windows, Python 3.12.6, Git 
 | Phase | Goal | Starts only when |
 | --- | --- | --- |
 | 0 | README and context | Complete with this document |
-| 1 | Headless CAD, Gmsh, and CalculiX proof, including a beam benchmark | Explicit approval |
+| 1 | Headless CAD, Gmsh, and CalculiX proof, including a beam benchmark | Recorded on 2026-11-23. See `CONTEXT.md` |
 | 2 | Material cards, restraints, result metrics, and mesh-refinement checks | Phase 1 exit criteria are met and recorded |
 | 3 | Bounded search over thickness and fillet radius | A defined stress metric exists |
 | 4 | FastAPI job orchestration and a SQLite index | The headless pipeline can be called as a function |
@@ -220,18 +220,7 @@ Phases are sequential on purpose. A web interface before a verified solver path 
 
 ## Planned local development requirements
 
-No install commands are listed here because the project does not have code, a dependency manifest, or a tested solver command yet.
-
-Phase 1 will need:
-
-- Python 3.11 or newer, with a project-local virtual environment
-- build123d and the Gmsh Python package
-- An unmodified CalculiX `ccx` executable, pinned to a recorded version and path
-- Git
-- Enough local disk for mesh and result files
-- A job directory whose solver working path has been tested on this machine. The current user profile path contains a space, which some scientific tools handle poorly
-
-Docker, a database server, Redis, and a cloud account are not required to begin Phase 1.
+Phase 1 ran from the project virtual environment `.venv`, the pins in `backend/requirements.lock`, and `ccx_static.exe` at the path in `CONTEXT.md`. A job directory under `C:\Users\Martin Tran\Documents\loadcad` worked for the proof. A space-free directory also worked. Docker, a database server, Redis, and a cloud account were not used.
 
 ## Zero-cost development philosophy
 
