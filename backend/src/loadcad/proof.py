@@ -23,11 +23,23 @@ from loadcad.postprocess.beam_theory import (
     euler_bernoulli_tip_deflection_mm,
     timoshenko_tip_deflection_mm,
 )
-from loadcad.postprocess.loads import consistent_nodal_forces, total_force, triangle_area
+from loadcad.postprocess.loads import (
+    consistent_nodal_forces,
+    quadratic_triangle_area,
+    total_force,
+    triangle_area,
+)
+from loadcad.postprocess.metrics import (
+    elements_touching,
+    hole_wall_distance_mm,
+    integration_peak,
+    nodal_peak,
+)
 from loadcad.postprocess.stress import von_mises
+from loadcad.solver.dat_stress import parse_integration_stress
 from loadcad.solver.deck import write_deck
 from loadcad.solver.frd import displacements, parse_frd, reactions, stress_components
-from loadcad.solver.runner import SolverFailure, run_ccx
+from loadcad.solver.runner import SolverFailure, require_bounded_displacement, run_ccx
 from loadcad.validation import require_phase1_force_direction
 
 PHASE1_BRACKET = BracketSpec(
@@ -124,6 +136,29 @@ def _sample_bending(
     }
 
 
+def _stress_samples(
+    mises: dict[int, float],
+    elements: dict[int, list[int]],
+    integration_stress: dict[int, list[np.ndarray]],
+    excluded_nodes: list[int],
+) -> dict[str, object]:
+    excluded = elements_touching(elements, excluded_nodes)
+    global_ip, global_element, global_point = integration_peak(integration_stress, set())
+    kept_nodal, kept_node = nodal_peak(mises, elements, excluded)
+    kept_ip, kept_element, kept_point = integration_peak(integration_stress, excluded)
+    return {
+        "max_integration_point_von_mises_mpa": global_ip,
+        "max_integration_point_element": global_element,
+        "max_integration_point_index": global_point,
+        "excluded_element_count": len(excluded),
+        "excluded_nodal_von_mises_mpa": kept_nodal,
+        "excluded_nodal_von_mises_node": kept_node,
+        "excluded_integration_point_von_mises_mpa": kept_ip,
+        "excluded_integration_point_element": kept_element,
+        "excluded_integration_point_index": kept_point,
+    }
+
+
 def _reaction_check(
     reaction_sum: np.ndarray, applied: np.ndarray
 ) -> dict[str, object]:
@@ -204,8 +239,15 @@ def run_beam(root: Path, spec: BeamSpec | None = None) -> dict[str, object]:
         reaction = reactions(parsed)
         magnitudes = {node: float(np.linalg.norm(value)) for node, value in disp.items()}
         peak_node = max(magnitudes, key=magnitudes.get)
+        require_bounded_displacement(magnitudes[peak_node], spec.length_mm)
         mises = {node: von_mises(*stress[node]) for node in stress}
         peak_mises_node = max(mises, key=mises.get)
+        samples = _stress_samples(
+            mises,
+            mesh.elements,
+            parse_integration_stress(solved.dat_path),
+            list(mesh.role_nodes["fixed_root"]) + list(mesh.role_nodes["tip_face"]),
+        )
         tip_target = np.array([spec.length_mm, 0.0, 0.0])
         tip_node = min(
             mesh.role_nodes["tip_face"],
@@ -261,6 +303,7 @@ def run_beam(root: Path, spec: BeamSpec | None = None) -> dict[str, object]:
             error_vs_timoshenko=(downward - timoshenko) / timoshenko,
             max_nodal_von_mises_mpa=mises[peak_mises_node],
             max_nodal_von_mises_node=int(peak_mises_node),
+            **samples,
             midspan_bending=_sample_bending(spec, mesh.nodes, stress),
             **_reaction_check(reaction_sum, np.array([0.0, 0.0, -spec.force_n])),
             ccx_version=_ccx_version(solved.dat_path, solved.stdout),
@@ -314,6 +357,13 @@ def run_bracket(
     force_n: float = BRACKET_FORCE_N,
     direction: tuple[float, float, float] = BRACKET_DIRECTION,
     element_size_mm: float = BRACKET_ELEMENT_SIZE_MM,
+    youngs_modulus_mpa: float = BENCHMARK_E_MPA,
+    poissons_ratio: float = BENCHMARK_NU,
+    material_id: str = "benchmark_placeholder",
+    material_note: str = (
+        "E and nu are benchmark placeholders so the solver can run. "
+        "They are not an approved material card and no allowable stress is defined."
+    ),
 ) -> dict[str, object]:
     spec = spec or PHASE1_BRACKET
     paths = prepare_job(root)
@@ -355,8 +405,12 @@ def run_bracket(
             paths["mesh"] / "bracket.msh",
         )
         (paths["logs"] / "gmsh.log").write_text(mesh.log, encoding="utf-8")
-        area = sum(
+        corner_area = sum(
             triangle_area(*(mesh.nodes[nid] for nid in tri.corners))
+            for tri in mesh.role_triangles["horizontal_top"]
+        )
+        area = sum(
+            quadratic_triangle_area(tri, mesh.nodes)
             for tri in mesh.role_triangles["horizontal_top"]
         )
         pressure = force_n / area
@@ -370,8 +424,8 @@ def run_bracket(
             mesh.elements,
             mesh.role_nodes["mounting_outer"],
             dloads=dloads,
-            youngs_modulus_mpa=BENCHMARK_E_MPA,
-            poissons_ratio=BENCHMARK_NU,
+            youngs_modulus_mpa=youngs_modulus_mpa,
+            poissons_ratio=poissons_ratio,
         )
         try:
             solved = run_ccx(ccx, paths["solver"], timeout_s=900)
@@ -385,8 +439,18 @@ def run_bracket(
         reaction = reactions(parsed)
         magnitudes = {node: float(np.linalg.norm(value)) for node, value in disp.items()}
         peak_node = max(magnitudes, key=magnitudes.get)
+        characteristic = float(
+            np.linalg.norm([spec.length_mm, spec.width_mm, spec.height_mm])
+        )
+        require_bounded_displacement(magnitudes[peak_node], characteristic)
         mises = {node: von_mises(*stress[node]) for node in stress}
         peak_mises_node = max(mises, key=mises.get)
+        samples = _stress_samples(
+            mises,
+            mesh.elements,
+            parse_integration_stress(solved.dat_path),
+            list(mesh.role_nodes["mounting_outer"]) + list(mesh.role_nodes["horizontal_top"]),
+        )
         reaction_sum = np.zeros(3)
         for node in mesh.role_nodes["mounting_outer"]:
             if node in reaction:
@@ -396,18 +460,16 @@ def run_bracket(
             model="l_bracket",
             load_model="positive pressure on horizontal_top, resultant force in -Z",
             restraint="encastre_mounting_face",
-            material_id="benchmark_placeholder",
-            material_note=(
-                "E and nu are benchmark placeholders so the solver can run. "
-                "They are not an approved material card and no allowable stress is defined."
-            ),
-            youngs_modulus_mpa=BENCHMARK_E_MPA,
-            poissons_ratio=BENCHMARK_NU,
+            material_id=material_id,
+            material_note=material_note,
+            youngs_modulus_mpa=youngs_modulus_mpa,
+            poissons_ratio=poissons_ratio,
             allowable_stress_mpa=None,
             force_n=force_n,
             direction=[0.0, 0.0, -1.0],
             pressure_mpa=pressure,
             loaded_area_mm2=area,
+            corner_triangle_area_mm2=corner_area,
             element_size_mm=element_size_mm,
             node_count=len(mesh.nodes),
             element_count=len(mesh.elements),
@@ -418,6 +480,11 @@ def run_bracket(
             max_displacement_node=int(peak_node),
             max_nodal_von_mises_mpa=mises[peak_mises_node],
             max_nodal_von_mises_node=int(peak_mises_node),
+            peak_node_hole_wall_distance_mm=hole_wall_distance_mm(mesh.nodes[peak_mises_node], spec),
+            excluded_peak_hole_wall_distance_mm=hole_wall_distance_mm(
+                mesh.nodes[int(samples["excluded_nodal_von_mises_node"])], spec
+            ),
+            **samples,
             **_reaction_check(reaction_sum, np.array([0.0, 0.0, -force_n])),
             ccx_version=_ccx_version(solved.dat_path, solved.stdout),
         )
@@ -467,7 +534,7 @@ def run_bracket(
                     "fillet_radius_mm": spec.fillet_radius_mm,
                     "holes": [hole.__dict__ for hole in spec.holes],
                 },
-                "material_id": "benchmark_placeholder",
+                "material_id": material_id,
                 "load_case": {
                     "type": "normal_pressure_on_face",
                     "face_role": "horizontal_top",
