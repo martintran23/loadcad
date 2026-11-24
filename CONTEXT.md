@@ -4,14 +4,14 @@ Persistent source of truth for contributors and future Cursor Agent sessions.
 
 | | |
 | --- | --- |
-| Last updated | 2026-11-23 |
-| Current phase | 1 — local headless CAD, mesh, and CalculiX proof |
-| Implementation | Phase 1 proof under `backend/`. No API, database, or UI |
-| Simulations run by this project | One cantilever and one filleted L-bracket, recorded in section 9. Not a validated design method |
+| Last updated | 2026-11-24 |
+| Current phase | 2 — materials, metrics, and mesh refinement, recorded. Pre-MVP |
+| Implementation | Headless pipeline under `backend/`. No API, database, or UI |
+| Simulations run by this project | Phase 1 solves and the Phase 2 refinement studies in section 9. Not a validated design method |
 
 Read this file before changing architecture, dependencies, geometry, meshing, or solver behavior. Read [README.md](README.md) for the product summary. If a coding session discovers that this file is wrong, update it in the same session with the evidence, and label anything still unmeasured as an open question.
 
-Measured Phase 1 results are in section 9 and in the open-question answers below. Anything not tied to those runs is still a plan.
+Measured results are in section 9 and in the open-question answers below. Anything not tied to those runs is still a plan.
 
 ## 1. Project Identity
 
@@ -46,13 +46,13 @@ The planned product combines parametric CAD, automated meshing, linear finite-el
 
 ### Current phase
 
-Phase 0 was completed on 2026-11-22. Phase 1 was approved on 2026-11-23 and the exit criteria are recorded in section 9. Phase 2 is not approved.
+Phase 0 was completed on 2026-11-22. Phase 1 was approved on 2026-11-23. Phase 2 was approved on 2026-11-24. Both are recorded in section 9. Phase 3 is not approved.
 
 ### Existing files
 
-Phase 0 added `README.md` and `CONTEXT.md`. Phase 1 added `backend/` (package, tests, and `requirements.lock`), `.gitignore`, and a gitignored CalculiX directory under `tools/calculix/`. Job output is under gitignored `artifacts/phase1/`. There is still no `LICENSE`, frontend, API package, materials library, or search package.
+Phase 0 added `README.md` and `CONTEXT.md`. Phase 1 added `backend/` (package, tests, and `requirements.lock`), `.gitignore`, and a gitignored CalculiX directory under `tools/calculix/`. Phase 2 added the material cards, the metric and safety-factor code, and the study tables in `backend/studies/`. Job output is under gitignored `artifacts/`. There is still no `LICENSE`, frontend, API package, or search package.
 
-The Git repository was initialized on branch `main` before Phase 0. Phase 1 did not create a commit.
+`dev` contains the Phase 1 commits `b2414b6` and `28b272a`. Phase 2 is in the working tree and is not committed.
 
 ### Environment observed on 2026-11-22
 
@@ -81,26 +81,26 @@ The repository path contains a space. Q9 was checked on 2026-11-23. A one-tet `c
 - Product scope, pipeline, unit system, and phase gates are written down.
 - A project virtual environment and `backend/requirements.lock`.
 - Filleted L-bracket and rectangular-cantilever constructors, STEP and STL export, Gmsh import, geometric face match, `C3D10` decks, `ccx` execution, FRD parsing, and von Mises post-processing.
-- One recorded cantilever solve and one recorded bracket solve. `decision_metric` and `estimated_safety_factor` are null in both result files.
-- Automated tests for units, geometry, mesh order, face match, solver I/O, and the two real solves. On 2026-11-23 the project environment passed 22 tests in 5.87 seconds, and a clean environment installed from the lockfile passed the same 22 in 17.22 seconds.
+- One recorded cantilever solve and one recorded bracket solve from Phase 1. Those two result files keep `decision_metric` and `estimated_safety_factor` null.
+- Cited cards for 6061-T6, Prusament PLA, and Prusament PETG. Only the aluminum card can be solved.
+- Beam and bracket refinement studies at 5, 2.5, and 1.25 mm, stored in `backend/studies/`. The bracket decision metric is `max_nodal_von_mises`. Its safety-factor record has `mesh_converged` false.
+- Rejection of a zero fillet before meshing, and classification of an unrestrained solid that still exits 0.
+- Automated tests for units, geometry, mesh order, face match, solver I/O, materials, the failure cases, the stored study, and the two Phase 1 solves. On 2026-11-24 the project environment passed 32 tests in 11.21 seconds. The earlier 22-test run remains the Phase 1 record.
 
 ### Unimplemented functionality
 
-- Safety-factor calculation and an approved `decision_metric`
-- Mesh-refinement studies
-- Approved material cards
+- A mesh-converged stress result. The Phase 2 factor is stored with `mesh_converged` false
 - Parameter search
 - HTTP API, database, web UI, authentication, and deployment
 
 ### Known blockers
 
-1. CalculiX is not installed. There is no project-verified `ccx` binary yet.
-2. build123d and Gmsh are not installed, so the CAD-to-mesh handoff is untested on this machine.
-3. Semantic faces cannot be trusted to keep their names across STEP import. The geometric rematch is specified below and unproven.
-4. Gmsh 10-node tetrahedron node order must be checked against the CalculiX `C3D10` convention before stress is trusted.
-5. No material allowable has a cited source stored in the repository.
-6. The project license is unset, and GPL obligations from Gmsh and CalculiX constrain a future proprietary distribution.
-7. No analytical comparison has been run. No error band is known.
+1. The project license is unset, and GPL obligations from Gmsh and CalculiX constrain a future proprietary distribution. Q10 is still open.
+2. No stress convergence band is adopted. The bracket nodal peak rose on the last refinement. See section 9.
+3. Prusament PLA and PETG have no cited Poisson ratio, so those cards cannot be solved.
+4. The bracket reaction is still short of the 100 N load after the quadratic-area change. The shortfall is smaller than in Phase 1 and is not closed.
+5. No fillet radius has a stored stress result that flattens under refinement. Q11 has no minimum.
+6. CalculiX, build123d, Gmsh, face match, and `C3D10` order were checked in Phase 1. Those Phase 0 blockers are not open.
 
 ## 3. Technical Architecture
 
@@ -473,7 +473,7 @@ Two different stress samples exist:
 | `*EL FILE` / `.frd` | Stress extrapolated to nodes and averaged across elements sharing a node | Contour display, and a candidate decision metric |
 | `*EL PRINT` / `.dat` | Integration-point stress | Audit metric, likely closer to the element formulation |
 
-The decision metric used in the safety factor is intentionally unset until the beam study in Phase 2. Until then, code may store the maximum nodal von Mises stress only as `max_nodal_von_mises_MPa`, with a note that it is not yet the design metric.
+The decision metric chosen on 2026-11-24 is `max_nodal_von_mises`, the maximum nodal von Mises stress with no face exclusion. Section 9 records why the excluded samples were not adopted. `mesh_converged` is false for that study. A solve that is not the stored bracket refinement still writes a null metric and a null safety factor.
 
 If the decision metric exceeds the allowable stress, set `elastic_assumption_exceeded` to true. The linear stress field is then not the expected physical stress field. The ratio still indicates that the load is past the chosen first-yield or allowable check. It is not a collapse load, a reserve factor from a plastic analysis, or a prediction of ultimate failure.
 
@@ -551,7 +551,7 @@ Proposed decision-metric candidates, in the order they should be investigated:
 2. Maximum averaged nodal von Mises stress with the same exclusion, used for display consistency if it tracks the integration-point metric.
 3. A global maximum nodal value, reported always, used as the decision metric only if the refinement study shows it is stable for the filleted bracket.
 
-The exclusion zone is an attempt to separate modeling artifacts at restraints and load patches from the bracket's structural stress. It can also hide a real concentration at a nearby hole. Phase 2 must inspect that case before adopting an exclusion. If the exclusion is not justified by the study, the decision metric remains the unfiltered value and the result copy explains the singularity risk.
+The exclusion zone is an attempt to separate modeling artifacts at restraints and load patches from the bracket's structural stress. It can also hide a real concentration at a nearby hole. Phase 2 inspected that case before adopting an exclusion. The study did not justify the exclusion, so the decision metric is the unfiltered nodal peak. The result copy keeps the raw peak, says `mesh_converged` is false, and states the singularity risk.
 
 ## 6. Core Data Models
 
@@ -929,14 +929,14 @@ SciPy optimizers are unnecessary for a two-variable grid. Revisit them only if t
 | Q2 | Does STEP import preserve millimetres with the installed build123d and Gmsh pair? | Answered 2026-11-23 for the beam and the Phase 1 bracket. See below |
 | Q3 | Do the proposed fingerprint tolerances uniquely match bracket faces after holes and a fillet? | Answered 2026-11-23 for the Phase 1 fixture. Not a sweep of every legal bracket |
 | Q4 | Does Gmsh's 10-node tet connectivity match CalculiX `C3D10` on one inspected element? | Answered 2026-11-23. Raw Gmsh order does not match. `swap_last_two` does |
-| Q5 | What displacement and stress differences remain between a slender cantilever solid model and Timoshenko beam theory after refinement? | Displacement recorded for one 5 mm mesh. Refinement and a stress band remain Phase 2 |
-| Q6 | Which von Mises sample becomes `decision_metric`? | Phase 2 |
-| Q7 | What mesh-convergence band is acceptable for that metric? | Phase 2 |
-| Q8 | Which cited numbers go into the first aluminum, PLA, and PETG cards? | Phase 2 |
+| Q5 | What displacement and stress differences remain between a slender cantilever solid model and Timoshenko beam theory after refinement? | Answered 2026-11-24 for sizes 5, 2.5, and 1.25 mm. Displacement is inside the 5% candidate. No stress band is adopted |
+| Q6 | Which von Mises sample becomes `decision_metric`? | Answered 2026-11-24. `max_nodal_von_mises`. Exclusion was not adopted |
+| Q7 | What mesh-convergence band is acceptable for that metric? | Answered 2026-11-24. No stress band is adopted. `mesh_converged` is false |
+| Q8 | Which cited numbers go into the first aluminum, PLA, and PETG cards? | Answered 2026-11-24. Cards are version 1 in `backend/src/loadcad/materials/cards.py`. Only aluminum is solvable |
 | Q9 | Does the user-profile space in `C:\Users\Martin Tran` break `ccx` or Gmsh if the job directory stays under the repository? | Answered 2026-11-23 for a box mesh and a one-tet solve. It did not break those runs |
 | Q10 | Project license, and is the Gmsh Python API acceptable for the intended distribution? | Before any proprietary release. Not a Phase 1 code blocker |
-| Q11 | What minimum fillet radius still meshes with a stable stress result for the allowed thickness range? | Phase 2 |
-| Q12 | Does a hole near the fillet make a face-exclusion stress metric unconservative? | Phase 2 |
+| Q11 | What minimum fillet radius still meshes with a stable stress result for the allowed thickness range? | Not established. Radius 0 is rejected before meshing. The only refined radius is 3 mm, and its stress did not flatten |
+| Q12 | Does a hole near the fillet make a face-exclusion stress metric unconservative? | Answered 2026-11-24 for one legal hole at the fillet clearance. Exclusion lowered the 2.5 mm nodal peak and left the 1.25 mm peaks unchanged. Exclusion was not adopted |
 
 ### License considerations
 
@@ -1024,7 +1024,7 @@ A phase starts only when the previous phase's exit criteria are recorded in this
 6. `C3D10` node order is either confirmed on a sample element or listed as a remaining blocker that prevents stress from being treated as meaningful.
 7. README status stays pre-MVP and does not claim a validated design method.
 
-**Status:** Completed on 2026-11-23 for the fixture below. Phase 2 has not started. No safety factor was emitted. No displacement pass band was declared.
+**Status:** Completed on 2026-11-23 for the fixture below. Those two jobs emitted no safety factor. The refinement and the safety-factor record are in the Phase 2 section. No stress pass band was declared from the single 5 mm mesh.
 
 #### Environment that ran the proof
 
@@ -1123,6 +1123,121 @@ The cantilever is one mesh size. The bracket has no closed-form stress result. N
 **In scope:** Versioned material cards with citations, the restraint and pressure models, integration-point and nodal metrics, mesh-refinement studies, the choice of `decision_metric`, and rejection rules for singular geometry.
 
 **Exit criteria:** Q6, Q7, and Q8 are answered in this file. A bracket refinement study is stored. Safety-factor output includes every field in section 5. At least one intentionally bad model, such as a fully unconstrained solid or a zero fillet, fails cleanly.
+
+**Status:** Recorded on 2026-11-24. Q6, Q7, and Q8 are answered below. The bracket study is in `backend/studies/phase2_bracket.json`. The safety-factor record is in that file and is copied here. A zero fillet and an unrestrained solid fail without a safety factor. `mesh_converged` is false. This is not a certified design.
+
+The same CalculiX 2.22 `ccx_static.exe`, Gmsh 4.15.2, and project virtual environment as Phase 1 were used. `OMP_NUM_THREADS=1`. Beam jobs use the Phase 1 benchmark constants, E = 210000 MPa and nu = 0.3, so the comparison with beam theory stays on those constants. Bracket jobs use `aluminum_6061_t6` version 1. The deck material token stays `BENCHMARK`. The card id is stored only in JSON.
+
+#### Q8, material cards
+
+| Card | Version | E | nu | Density | Allowable | Basis | Solvable |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `aluminum_6061_t6` | 1 | 68900 MPa | 0.33 | 2.7e-9 tonne/mm³ | 276 MPa | `tensile_yield` | Yes |
+| `prusament_pla` | 1 | 2300 MPa | none | 1.24e-9 tonne/mm³ | 17 MPa | `specified_allowable` | No |
+| `prusament_petg` | 1 | 1500 MPa | none | 1.27e-9 tonne/mm³ | 18 MPa | `specified_allowable` | No |
+
+Aluminum values are the Aluminum Association typical numbers on the ASM MatWeb 6061-T6 sheet, bassnum MA6061t6, read 2026-11-24: tensile yield 276 MPa, modulus 68.9 GPa, density 2.70 g/cm³. The sheet marks Poisson's ratio 0.33 as estimated from similar aluminum alloys. The card limitations say the AA data are not for design, are not an MMPDS A-basis or B-basis allowable, and do not specify product form. Source URL: `https://asm.matweb.com/search/SpecificMaterial.asp?bassnum=MA6061t6`.
+
+PLA and PETG numbers are from the Prusa Polymers technical datasheets, version 1.1, last update 16-02-2022. The moduli are the horizontal ISO 527-1 values, 2.3 GPa and 1.5 GPa. Densities are ISO 1183, 1.24 g/cm³ and 1.27 g/cm³. The allowables are the published interlayer adhesions, 17 MPa and 18 MPa, not the horizontal tensile yields of 51 MPa and 47 MPa. Those sheets do not give Poisson's ratio. `require_solvable()` raises `request_invalid` for both cards. A Poisson ratio from a different paper is not copied onto these cards.
+
+#### Q5, cantilever refinement
+
+Three meshes of the Phase 1 cantilever. Outer-fiber beam-theory stress is `P L (h / 2) / I` = 120 MPa. Tip formulas are unchanged: Euler-Bernoulli 1.5238095238095237 mm, Timoshenko 1.5267809523809523 mm. No stress pass band is declared.
+
+| Element size | Nodes | Elements | Tip, mm | Error vs Timoshenko | Max nodal, MPa | Max IP, MPa | Excluded nodal, MPa | Excluded IP, MPa | Min SICN |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 5 mm | 1839 | 794 | 1.51964 | -0.004677129597285207 | 121.5676136507051 | 109.24148277726334 | 121.5676136507051 | 101.8006627542037 | 0.32813709407741276 |
+| 2.5 mm | 13203 | 7233 | 1.52073 | -0.003963209241978178 | 119.96376682141755 | 119.05565641793889 | 119.96376682141755 | 110.36846845905566 | 0.3006060505828765 |
+| 1.25 mm | 78548 | 49705 | 1.52129 | -0.003596424472279015 | 143.87843461812025 | 141.78288267049717 | 124.36086036271848 | 112.92418529950022 | 0.2899750654703822 |
+
+The finest tip error against Timoshenko is -0.003596424472279015. That is inside the 5% displacement candidate named before this table existed. The last refinement changed the tip by relative 0.00036824419851000243. This displacement check is not a stress band.
+
+At 1.25 mm the global nodal peak is node 2 at `(0, -5, 5)` mm, a corner of the fixed face, 143.87843461812025 MPa. Relative to the 120 MPa fiber stress that is +0.1989869551510021. The excluded nodal peak is node 14842 at `(0.91506350946, -4.0849364905, -5)` mm, 124.36086036271848 MPa, relative +0.03634050302265403. The excluded integration-point peak is 112.92418529950022 MPa, relative -0.05896512250416481. The last refinement raised the global nodal peak by relative 0.19934909039912818 and the excluded nodal peak by relative 0.03665351345499685. The fixed-face corner is a restraint sample. The inboard outer-fiber sample is closer to 120 MPa and is still moving. Neither is given a pass band.
+
+Fixed-face reaction balance on these three beam meshes stays near 1e-5 relative. The full rows are in `backend/studies/phase2_beam.json`. Peak coordinates are in `backend/studies/phase2_peaks.json`.
+
+#### Bracket refinement and the reaction residual
+
+Same geometry as the Phase 1 bracket. Material `aluminum_6061_t6`. Pressure is `100 N / quadratic_triangle_area` of the loaded face. The corner-triangle area is stored beside it. Sizes 5, 2.5, and 1.25 mm. Element counts stayed under the 200000 cap.
+
+| Element size | Nodes | Elements | Max displacement, mm | Max nodal, MPa | Max IP, MPa | Excluded nodal, MPa | Excluded IP, MPa | Reaction Z, N | Relative balance | Min SICN |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 5 mm | 3968 | 1934 | 0.10347511935372701 | 19.853864631903914 | 22.099496423517007 | 18.0129013191072 | 15.773872299600562 | 99.95948057750002 | 0.00040519641560245965 | 0.035646673132626865 |
+| 2.5 mm | 12576 | 6769 | 0.1059448646182312 | 23.040293747204462 | 20.433328583680886 | 18.565897065113926 | 16.67525306079077 | 99.9593433441401 | 0.00040657148500031367 | 0.15056475954249293 |
+| 1.25 mm | 71081 | 43487 | 0.1065433514224539 | 25.876673219034874 | 23.34072181593601 | 25.731386260105715 | 23.34072181593601 | 99.98777679260431 | 0.00012223954524946782 | 0.2886104548236977 |
+
+Last-step relative changes, from 2.5 mm to 1.25 mm: displacement +0.005649040247295845, nodal von Mises +0.12310517838664957, integration-point von Mises +0.1422868144242108, excluded nodal +0.38594898861396976, excluded integration-point +0.39972219497034445.
+
+On the 1.25 mm mesh the nodal peak is node 7794 at `(7.4370779821, 11.567835638, 5.0532867799)` mm. The excluded nodal peak is node 7786 at `(6.7683422976, 16.261784874, 5.264489206)` mm. Both sit at the inside fillet, and their hole-wall distances are 30.243299200758642 mm and 30.755603658863414 mm. The Phase 1 holes are not the peak. The integration-point peak and the excluded integration-point peak are the same element, 46549. The mean of that element's four corner nodes is `(6.3068335739500005, 17.58766504475, 5.266393432225)` mm, which is also in the fillet region and is not the integration-point coordinate. Exclusion removed 13247 of 43487 elements and did not change the integration-point peak. It lowered the nodal peak only from 25.876673219034874 MPa to 25.731386260105715 MPa.
+
+The 5 mm and 2.5 mm excluded nodal peaks, 18.0129013191072 MPa and 18.565897065113926 MPa, looked quiet and then jumped on the next refinement. That pair is not evidence that the excluded metric had converged. At 5 mm, 1649 of 1934 elements touch the fixed or loaded face, and the minimum SICN is 0.035646673132626865. There is no SICN rejection threshold in the code. The solve was kept and the low quality is part of the record.
+
+Quadratic loaded area and corner-triangle area:
+
+| Element size | Pressure faces | Quadratic area, mm² | Corner area, mm² | Pressure, MPa |
+| --- | --- | --- | --- | --- |
+| 5 mm | 269 | 1541.0175864136068 | 1542.8974363210118 | 0.0648921860994 |
+| 2.5 mm | 671 | 1541.0175864136068 | 1542.8974363210118 | 0.0648921860994 |
+| 1.25 mm | 2437 | 1540.555602276636 | 1541.1206211357219 | 0.06491164606601658 |
+
+The 5 mm and 2.5 mm areas match in the stored JSON while the face counts do not. A planar face area depends on its boundary nodes. The boundary sets were not compared node by node.
+
+Phase 1, using corner-triangle pressure on the 2.5 mm bracket, stored a Z shortfall of 0.16239726138016408 N. The Phase 2 2.5 mm job, using quadratic-triangle pressure and the aluminum card, stored reaction Z 99.9593433441401 N, shortfall 0.0406566558599053 N. On that mesh the corner area exceeds the quadratic area by 1.8798499074050596 mm². Times the quadratic pressure, that difference is 0.121987570030269 N. Subtracting it from the Phase 1 shortfall leaves 0.04040969134989508 N, which is 0.0002469645100102169 N away from the Phase 2 shortfall. The two jobs also differ in modulus, Poisson's ratio, and the mesh that Gmsh produced. The area split is consistent with most of the old gap. It does not close the residual. At 1.25 mm the shortfall is 0.01222320739569227 N. At 5 mm it is 0.04051942249998319 N.
+
+#### Q6 and Q7
+
+Candidate 1 was the maximum integration-point von Mises stress on elements that do not touch the fixed face or the loaded face. On this bracket that sample went 15.773872299600562, 16.67525306079077, then 23.34072181593601 MPa. The last step is relative +0.39972219497034445. It has not stabilized, so it is not the decision metric.
+
+Candidate 2, the excluded nodal peak, rose by relative +0.38594898861396976 on the same step. It is not the decision metric either.
+
+Candidate 3 is the global nodal peak. It is the decision metric because the exclusion was not justified and this is the unfiltered value. On the finest bracket mesh it is also the largest of the four samples. The name in the result file is `max_nodal_von_mises`.
+
+`mesh_converged` is true only when a stress band has been written down after a study that meets it. `STRESS_RELATIVE_BAND` in `backend/src/loadcad/postprocess/decision.py` is `None`. The 5% figure remains the beam-tip displacement candidate, which the finest cantilever meets. It is not copied onto stress. Widening a stress band until the +0.12310517838664957 nodal change or the +0.39972219497034445 excluded change would pass was not done. `mesh_converged` is false.
+
+#### Safety-factor record
+
+The record is for the 1.25 mm aluminum bracket in the three-size study, not for the near-hole probe and not for the beam. `estimated_safety_factor` = 276 / 25.876673219034874 = 10.665976946254995.
+
+| Field | Value |
+| --- | --- |
+| `allowable_stress_mpa` | 276.0 |
+| `allowable_basis` | `tensile_yield` |
+| `decision_metric` | `max_nodal_von_mises` |
+| `decision_von_mises_mpa` | 25.876673219034874 |
+| `max_nodal_von_mises_mpa` | 25.876673219034874 |
+| `estimated_safety_factor` | 10.665976946254995 |
+| `elastic_assumption_exceeded` | false. 25.876673219034874 is below 276 |
+| `mesh_converged` | false |
+| `restraint` | `encastre_mounting_face` |
+| `load_model` | `normal_pressure` |
+| `disclaimer` | Simulated linear-elastic candidate under the stated assumptions. Not a certified, physically tested, or guaranteed-safe design |
+
+The card limitations are stored on the same object. They say the Aluminum Association typical values are not for design. The factor is an unconverged linear-elastic ratio for this mesh, this restraint, and this pressure. It is not a certification, not a plastic reserve, and not evidence that the bracket is adequate.
+
+#### Q12, hole at the fillet clearance
+
+The product rule rejects a hole whose center is closer than thickness + fillet + radius. For this bracket that limit is 10.5 mm. A separate pair of solves moved the horizontal hole from x = 40 mm to x = 10.5 mm and left the vertical hole at z = 40 mm. Material and load match the bracket study. Sizes 2.5 mm and 1.25 mm. Stored in `backend/studies/phase2_near_hole.json`. This pair is not the safety-factor fixture.
+
+| Element size | Elements | Max nodal, MPa | Excluded nodal, MPa | Max IP, MPa | Excluded IP, MPa | Peak node, mm | Hole-wall distance, mm | Min SICN |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2.5 mm | 6753 | 38.50734963193995 | 37.48549252414195 | 35.1882236997135 | 35.1882236997135 | (10.50002864, 17.5, 5.0) | 1.7763568394002505e-15 | 0.09267682413528726 |
+| 1.25 mm | 43405 | 39.79050421914956 | 39.79050421914956 | 36.47052481391922 | 36.47052481391922 | (10.198658299, 12.518227815, 0.0) | 4.440892098500626e-16 | 0.04338961420308473 |
+
+Both peaks are on the hole wall. At 2.5 mm, exclusion lowers the nodal peak by relative 0.026536677220455225 and does not change the integration-point peak. The kept nodal node is `(9.9436976651, 17.43731978, 0.0)` mm, also on the hole wall. At 1.25 mm, exclusion changes neither peak. Using the excluded nodal value on the coarser mesh would report a lower stress at the hole. That is enough to refuse the exclusion. The 1.25 mm minimum SICN is 0.04338961420308473. The last nodal step is relative +0.0333223293598294, which is smaller than the far-hole bracket's last step, on a mesh with a poor minimum SICN. No safety factor is emitted for this pair. The 10.665976946254995 factor does not apply to it.
+
+#### Q11, fillet radius
+
+A bracket with fillet radius 0 raises `GeometryError` `request_invalid` before meshing. The job status is `failed`, and `results/results.json` is not written. The only radius run through the three-size study is 3 mm. That study's stress samples did not flatten, so 3 mm is not a demonstrated minimum for stable stress. No smaller positive radius was solved. Thickness was not swept.
+
+#### Bad models
+
+The zero-fillet path is the test `test_zero_fillet_job_fails_without_a_safety_factor`.
+
+The unrestrained model is one `C3D10` tetrahedron with 1 mm edges, a 1 N tip load, and no `*BOUNDARY`. On 2026-11-24 `ccx_static.exe` returned 0 and the parsed peak displacement was 117108275095.57127 mm. `require_bounded_displacement` raises `solver_failed` when the displacement is non-finite or greater than 10 times a characteristic length, here 10 mm. The deck does not contain `estimated_safety_factor`. The test `test_unrestrained_solid_fails_without_a_safety_factor` checks the exit code, the failure code, and the missing safety-factor text. It does not pin the displacement magnitude. That magnitude is from the run recorded here. The job directory is `artifacts/phase2/unrestrained`.
+
+#### What Phase 2 does not claim
+
+The safety factor is one unconverged nodal peak divided into a typical tensile yield that the cited sheet says is not for design. Displacement of the cantilever is close to Timoshenko beam theory. Bracket stress is not converged. Printed cards cannot be solved. Phase 3 is not approved. README status stays pre-MVP.
 
 ### Phase 3: Parametric optimization
 
@@ -1297,7 +1412,7 @@ Future agents working on this repository follow these rules.
 
 ## 13. Next Actions
 
-Phase 1 was approved on 2026-11-23 and the checklist below was carried out. Phase 2 is not approved. Do not start the material library, the search, the API, or the UI without a new approval.
+Phase 1 was approved on 2026-11-23 and the checklist below was carried out. Phase 2 was approved on 2026-11-24 and its checklist follows. Phase 3 is not approved. Do not start the search, the API, or the UI without a new approval.
 
 1. Project virtual environment `.venv`, Python 3.12.6. Not the global interpreter.
 2. Direct packages: build123d, Gmsh, NumPy, meshio, and pytest, pinned in `backend/requirements.lock`. FastAPI, React, and a database were not added. SciPy and scikit-learn are present only because build123d depends on them. LoadCAD does not import them.
@@ -1315,13 +1430,30 @@ Phase 1 was approved on 2026-11-23 and the checklist below was carried out. Phas
 14. This file and `README.md` updated from those runs.
 15. Stop.
 
-Remaining gaps, none of which authorize Phase 2 by themselves:
+Phase 2 checklist, carried out on 2026-11-24:
 
-- Q5 still needs a refinement series before any displacement or stress band exists.
-- Q6, Q7, Q8, Q10, Q11, and Q12 are open.
-- The bracket reaction is short by 0.162 N on a 100 N load. The cause was not isolated.
-- The planned rigid-body solver test, with no restraint, was not added.
-- `cadgmsh` was not tried. Direct STEP import worked on these two solids.
+1. Versioned cards for `aluminum_6061_t6`, `prusament_pla`, and `prusament_petg`. Q8 is answered. Printed cards fail `require_solvable()`.
+2. Integration-point stress is read from `*EL PRINT` with the DAT component order corrected before von Mises.
+3. Bracket pressure uses the quadratic face area. Corner area is still stored.
+4. Beam and bracket refinements at 5, 2.5, and 1.25 mm. Tables are in `backend/studies/` and section 9.
+5. Q5 is answered for displacement. No stress band is declared.
+6. Q6: `decision_metric` is `max_nodal_von_mises`. Exclusion was not adopted.
+7. Q7: no stress convergence band. `mesh_converged` is false.
+8. The aluminum bracket safety-factor record includes every field in section 5. The value is 10.665976946254995 with the disclaimer and `elastic_assumption_exceeded` false.
+9. Q12 was checked with a horizontal hole at the 10.5 mm clearance. Exclusion was slightly unconservative at 2.5 mm and neutral at 1.25 mm.
+10. A zero fillet fails as `request_invalid` with no results file. An unrestrained tet exits 0 and is then classified `solver_failed` with no safety factor.
+11. This file and `README.md` updated from those runs.
+12. Stop. Do not start Phase 3.
+
+Remaining gaps, none of which authorize Phase 3 by themselves:
+
+- Bracket stress is still rising. `STRESS_RELATIVE_BAND` is unset on purpose.
+- The 1.25 mm aluminum bracket reaction is still short by 0.01222320739569227 N.
+- Q11 has no minimum fillet for stable stress. Only radius 0 and radius 3 mm were exercised, and radius 3 mm did not converge.
+- Q10, the project license and the Gmsh distribution question, is still open.
+- PLA and PETG cannot be solved until a Poisson ratio for those products is cited.
+- The near-hole 1.25 mm mesh has minimum SICN 0.04338961420308473. No quality threshold rejected it.
+- `cadgmsh` was not tried. Direct STEP import remains the path that was run.
 
 ## Source notes from Phase 0
 

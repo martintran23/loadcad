@@ -2,9 +2,9 @@
 
 **Describe what a part needs to withstand. LoadCAD designs and simulates it.**
 
-**Status: pre-MVP. Phase 1 is a local headless proof, not a product.**
+**Status: pre-MVP. Phase 2 is a local structural estimate, not a product.**
 
-A project virtual environment can build one hard-coded filleted L-bracket and one rectangular cantilever, mesh them, and run CalculiX. The numbers from those two runs are in [CONTEXT.md](CONTEXT.md). They are single-mesh numerical results under placeholder material constants. They are not a certified design, a safety factor, or a validated design method.
+A project virtual environment can build one filleted L-bracket and one rectangular cantilever, mesh them at more than one size, and run CalculiX. The numbers are in [CONTEXT.md](CONTEXT.md). One aluminum bracket study stores an estimated safety factor for the unfiltered nodal peak. That study did not converge, and the cited aluminum yield is marked not for design. The factor is not a certification and not a validated design method.
 
 The engineering source of truth for contributors and future coding sessions is [CONTEXT.md](CONTEXT.md). This README explains the product and the planned architecture. Where the two files disagree, `CONTEXT.md` wins until both are updated together.
 
@@ -95,7 +95,7 @@ There are no customers, users, or usage figures yet.
 
 ## MVP features
 
-The product MVP is one component family: **parametric L-brackets**. These features are planned. None are implemented.
+The product MVP is one component family: **parametric L-brackets**. The rows below are the intended product. A headless fixture can already build the solid, mesh it, solve one load case, and store an unconverged stress factor. Search, a user-entered request, and on-screen review are not implemented.
 
 | Planned capability | What the user provides or receives |
 | --- | --- |
@@ -184,7 +184,7 @@ Every future result screen and report needs to stay compatible with the followin
 - Ten-node tetrahedra (`C3D10`) are the element used in the proof. Linear tetrahedra are a known poor default for this kind of stress result and are not the decision model.
 - Re-entrant corners without a fillet make the elastic stress unbounded as the mesh is refined. Simulation jobs require a positive fillet radius.
 - Peak stress at a restraint, a load, or a hole can be a numerical singularity. The reported metric has to be defined and compared across mesh sizes.
-- CalculiX writes stress components. The proof computes nodal von Mises stress from those components. Averaged nodal values and integration-point values are different quantities. The stored peak is the nodal value.
+- CalculiX writes stress components. LoadCAD computes nodal von Mises stress from those components and integration-point von Mises stress from the DAT table. The Phase 2 decision metric is the maximum nodal value, named `max_nodal_von_mises`. The stored bracket factor has `mesh_converged` false.
 - Filament materials such as PLA and PETG are anisotropic and process-dependent when printed. An isotropic card is an approximation, not a description of a printed part.
 - A safety factor from this model is not a certification, a guarantee of safety, or a substitute for physical testing.
 - A completed solver run only proves that this particular numerical problem returned a solution.
@@ -193,11 +193,11 @@ Every future result screen and report needs to stay compatible with the followin
 
 | Item | State |
 | --- | --- |
-| Phase | 1 local proof recorded. Pre-MVP. Phase 2 has not started |
+| Phase | 2 recorded. Pre-MVP. Phase 3 has not started |
 | Application source | `backend/` headless pipeline only. No API and no UI |
 | Dependencies | Project virtual environment and `backend/requirements.lock`. CalculiX binary under `tools/calculix/` |
-| CAD, mesh, or FEA runs | One cantilever and one L-bracket, stored under `artifacts/phase1/`. Single mesh size each. No safety factor |
-| Tests | 22 passed on 2026-11-23, including the two real solver runs |
+| CAD, mesh, or FEA runs | Phase 1 jobs under `artifacts/phase1/`. Phase 2 refinements under `artifacts/phase2/`, with the tables in `backend/studies/`. One unconverged aluminum safety factor |
+| Tests | 32 passed on 2026-11-24, including the two Phase 1 solver runs and the failure cases |
 | Hosted service | None |
 | License | Not selected |
 
@@ -209,8 +209,8 @@ Observed on the development machine during Phase 0: Windows, Python 3.12.6, Git 
 | --- | --- | --- |
 | 0 | README and context | Complete with this document |
 | 1 | Headless CAD, Gmsh, and CalculiX proof, including a beam benchmark | Recorded on 2026-11-23. See `CONTEXT.md` |
-| 2 | Material cards, restraints, result metrics, and mesh-refinement checks | Phase 1 exit criteria are met and recorded |
-| 3 | Bounded search over thickness and fillet radius | A defined stress metric exists |
+| 2 | Material cards, restraints, result metrics, and mesh-refinement checks | Recorded on 2026-11-24. The stress metric is not mesh-converged |
+| 3 | Bounded search over thickness and fillet radius | Not approved. A converged metric is still missing |
 | 4 | FastAPI job orchestration and a SQLite index | The headless pipeline can be called as a function |
 | 5 | React and Three.js geometry and stress view | The API can return a completed job and its artifacts |
 | 6 | Export polish and supervised user testing | A person can run the local product flow |
@@ -268,4 +268,4 @@ Running an unmodified GPL program as a separate process is the planned engineeri
 
 ## Further reading
 
-[CONTEXT.md](CONTEXT.md) contains the unit system, coordinate conventions, data models, solver pipeline, architecture decisions, test strategy, risks, and the Phase 1 checklist.
+[CONTEXT.md](CONTEXT.md) contains the unit system, coordinate conventions, data models, solver pipeline, architecture decisions, test strategy, risks, and the Phase 1 and Phase 2 records.
