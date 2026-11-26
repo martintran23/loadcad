@@ -8,6 +8,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+def require_bounded_displacement(max_displacement_mm: float, characteristic_mm: float) -> None:
+    """This ccx build can exit 0 for an unrestrained solid and return a huge displacement."""
+    limit = 10.0 * characteristic_mm
+    if max_displacement_mm != max_displacement_mm or max_displacement_mm > limit:
+        raise SolverFailure(
+            "solver_failed",
+            f"displacement {max_displacement_mm:.6g} mm exceeds {limit:.6g} mm, "
+            "so the model is treated as unrestrained or singular",
+        )
+
+
 class SolverFailure(Exception):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)

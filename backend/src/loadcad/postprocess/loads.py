@@ -21,6 +21,18 @@ def triangle_area(p1: np.ndarray, p2: np.ndarray, p3: np.ndarray) -> float:
     return float(0.5 * np.linalg.norm(np.cross(p2 - p1, p3 - p1)))
 
 
+def quadratic_triangle_area(tri: FaceTriangle, nodes: dict[int, np.ndarray]) -> float:
+    """Area of the four flat triangles formed by corners and midside nodes."""
+    c0, c1, c2 = (nodes[nid] for nid in tri.corners)
+    m01, m12, m20 = (nodes[nid] for nid in tri.midsides)
+    return (
+        triangle_area(c0, m01, m20)
+        + triangle_area(c1, m12, m01)
+        + triangle_area(c2, m20, m12)
+        + triangle_area(m01, m12, m20)
+    )
+
+
 def consistent_nodal_forces(
     triangles: list[FaceTriangle],
     nodes: dict[int, np.ndarray],

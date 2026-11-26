@@ -1,0 +1,152 @@
+{
+  "bracket": [
+    {
+      "model": "bracket",
+      "element_size_mm": 5,
+      "max_nodal_von_mises_node": 176,
+      "max_nodal_von_mises_mpa": 19.853864631903914,
+      "max_nodal_xyz_mm": [
+        8.0,
+        27.501231383,
+        5.0
+      ],
+      "excluded_nodal_von_mises_node": 225,
+      "excluded_nodal_von_mises_mpa": 18.0129013191072,
+      "excluded_nodal_xyz_mm": [
+        10.001079717,
+        30.0,
+        0.0
+      ]
+    },
+    {
+      "model": "bracket",
+      "element_size_mm": 2.5,
+      "max_nodal_von_mises_node": 2223,
+      "max_nodal_von_mises_mpa": 23.040293747204462,
+      "max_nodal_xyz_mm": [
+        6.8387862163,
+        15.629333711,
+        5.2338505918
+      ],
+      "excluded_nodal_von_mises_node": 233,
+      "excluded_nodal_von_mises_mpa": 18.565897065113926,
+      "excluded_nodal_xyz_mm": [
+        8.75,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "model": "bracket",
+      "element_size_mm": 1.25,
+      "max_nodal_von_mises_node": 7794,
+      "max_nodal_von_mises_mpa": 25.876673219034874,
+      "max_nodal_xyz_mm": [
+        7.4370779821,
+        11.567835638,
+        5.0532867799
+      ],
+      "excluded_nodal_von_mises_node": 7786,
+      "excluded_nodal_von_mises_mpa": 25.731386260105715,
+      "excluded_nodal_xyz_mm": [
+        6.7683422976,
+        16.261784874,
+        5.264489206
+      ]
+    }
+  ],
+  "beam": [
+    {
+      "model": "beam",
+      "element_size_mm": 5,
+      "max_nodal_von_mises_node": 1176,
+      "max_nodal_von_mises_mpa": 121.5676136507051,
+      "max_nodal_xyz_mm": [
+        3.2872583308,
+        1.3315885842,
+        5.0
+      ],
+      "excluded_nodal_von_mises_node": 1176,
+      "excluded_nodal_von_mises_mpa": 121.5676136507051,
+      "excluded_nodal_xyz_mm": [
+        3.2872583308,
+        1.3315885842,
+        5.0
+      ]
+    },
+    {
+      "model": "beam",
+      "element_size_mm": 2.5,
+      "max_nodal_von_mises_node": 4153,
+      "max_nodal_von_mises_mpa": 119.96376682141755,
+      "max_nodal_xyz_mm": [
+        1.8301270189,
+        3.1698729811,
+        -5.0
+      ],
+      "excluded_nodal_von_mises_node": 4153,
+      "excluded_nodal_von_mises_mpa": 119.96376682141755,
+      "excluded_nodal_xyz_mm": [
+        1.8301270189,
+        3.1698729811,
+        -5.0
+      ]
+    },
+    {
+      "model": "beam",
+      "element_size_mm": 1.25,
+      "max_nodal_von_mises_node": 2,
+      "max_nodal_von_mises_mpa": 143.87843461812025,
+      "max_nodal_xyz_mm": [
+        0.0,
+        -5.0,
+        5.0
+      ],
+      "excluded_nodal_von_mises_node": 14842,
+      "excluded_nodal_von_mises_mpa": 124.36086036271848,
+      "excluded_nodal_xyz_mm": [
+        0.91506350946,
+        -4.0849364905,
+        -5.0
+      ]
+    }
+  ],
+  "near_hole": [
+    {
+      "model": "bracket-near-hole",
+      "element_size_mm": 2.5,
+      "max_nodal_von_mises_node": 541,
+      "max_nodal_von_mises_mpa": 38.50734963193995,
+      "max_nodal_xyz_mm": [
+        10.50002864,
+        17.5,
+        5.0
+      ],
+      "excluded_nodal_von_mises_node": 594,
+      "excluded_nodal_von_mises_mpa": 37.48549252414195,
+      "excluded_nodal_xyz_mm": [
+        9.9436976651,
+        17.43731978,
+        0.0
+      ]
+    },
+    {
+      "model": "bracket-near-hole",
+      "element_size_mm": 1.25,
+      "max_nodal_von_mises_node": 1206,
+      "max_nodal_von_mises_mpa": 39.79050421914956,
+      "max_nodal_xyz_mm": [
+        10.198658299,
+        12.518227815,
+        0.0
+      ],
+      "excluded_nodal_von_mises_node": 1206,
+      "excluded_nodal_von_mises_mpa": 39.79050421914956,
+      "excluded_nodal_xyz_mm": [
+        10.198658299,
+        12.518227815,
+        0.0
+      ]
+    }
+  ]
+}

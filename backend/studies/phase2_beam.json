@@ -1,0 +1,63 @@
+{
+  "model": "rectangular_cantilever",
+  "material_id": "benchmark_placeholder",
+  "decision_metric": null,
+  "estimated_safety_factor": null,
+  "rows": [
+    {
+      "element_size_mm": 5.0,
+      "node_count": 1839,
+      "element_count": 794,
+      "tip_downward_deflection_mm": 1.51964,
+      "euler_bernoulli_tip_mm": 1.5238095238095237,
+      "timoshenko_tip_mm": 1.5267809523809523,
+      "error_vs_euler_bernoulli": -0.0027362499999998777,
+      "error_vs_timoshenko": -0.004677129597285207,
+      "max_nodal_von_mises_mpa": 121.5676136507051,
+      "max_integration_point_von_mises_mpa": 109.24148277726334,
+      "excluded_nodal_von_mises_mpa": 121.5676136507051,
+      "excluded_integration_point_von_mises_mpa": 101.8006627542037,
+      "relative_balance_error": 8.51098701878659e-06,
+      "min_sicn": 0.32813709407741276
+    },
+    {
+      "element_size_mm": 2.5,
+      "node_count": 13203,
+      "element_count": 7233,
+      "tip_downward_deflection_mm": 1.52073,
+      "euler_bernoulli_tip_mm": 1.5238095238095237,
+      "timoshenko_tip_mm": 1.5267809523809523,
+      "error_vs_euler_bernoulli": -0.0020209375,
+      "error_vs_timoshenko": -0.003963209241978178,
+      "max_nodal_von_mises_mpa": 119.96376682141755,
+      "max_integration_point_von_mises_mpa": 119.05565641793889,
+      "excluded_nodal_von_mises_mpa": 119.96376682141755,
+      "excluded_integration_point_von_mises_mpa": 110.36846845905566,
+      "relative_balance_error": 2.2793823937573202e-05,
+      "min_sicn": 0.3006060505828765
+    },
+    {
+      "element_size_mm": 1.25,
+      "node_count": 78548,
+      "element_count": 49705,
+      "tip_downward_deflection_mm": 1.52129,
+      "euler_bernoulli_tip_mm": 1.5238095238095237,
+      "timoshenko_tip_mm": 1.5267809523809523,
+      "error_vs_euler_bernoulli": -0.001653437499999924,
+      "error_vs_timoshenko": -0.003596424472279015,
+      "max_nodal_von_mises_mpa": 143.87843461812025,
+      "max_integration_point_von_mises_mpa": 141.78288267049717,
+      "excluded_nodal_von_mises_mpa": 124.36086036271848,
+      "excluded_integration_point_von_mises_mpa": 112.92418529950022,
+      "relative_balance_error": 6.566477596346656e-06,
+      "min_sicn": 0.2899750654703822
+    }
+  ],
+  "last_step_relative_change": {
+    "tip_downward_deflection_mm": 0.00036824419851000243,
+    "max_nodal_von_mises_mpa": 0.19934909039912818,
+    "max_integration_point_von_mises_mpa": 0.19089581239866082,
+    "excluded_nodal_von_mises_mpa": 0.03665351345499685,
+    "excluded_integration_point_von_mises_mpa": 0.023156222752086814
+  }
+}

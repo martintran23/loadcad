@@ -35,6 +35,8 @@ def write_deck(
     cloads: dict[int, np.ndarray] | None = None,
     youngs_modulus_mpa: float = 210_000.0,
     poissons_ratio: float = 0.3,
+    restrain: bool = True,
+    integration_point_stress: bool = True,
 ) -> None:
     lines = [
         "*HEADING",
@@ -48,8 +50,9 @@ def write_deck(
     for element_id in sorted(elements):
         connectivity = ", ".join(str(node_id) for node_id in elements[element_id])
         lines.append(f"{element_id}, {connectivity}")
-    lines.append(f"*NSET, NSET={FIXED_SET}")
-    lines.extend(_wrap_ids(sorted(set(fixed_nodes))))
+    if restrain:
+        lines.append(f"*NSET, NSET={FIXED_SET}")
+        lines.extend(_wrap_ids(sorted(set(fixed_nodes))))
     lines.extend(
         [
             f"*MATERIAL, NAME={MATERIAL_NAME}",
@@ -58,10 +61,15 @@ def write_deck(
             f"*SOLID SECTION, ELSET={ELEMENT_SET}, MATERIAL={MATERIAL_NAME}",
             "*STEP",
             "*STATIC",
-            f"*BOUNDARY",
-            f"{FIXED_SET}, 1, 3, 0.",
         ]
     )
+    if restrain:
+        lines.extend(
+            [
+                "*BOUNDARY",
+                f"{FIXED_SET}, 1, 3, 0.",
+            ]
+        )
     if dloads:
         lines.append("*DLOAD")
         for element_id, face, pressure in dloads:
@@ -81,8 +89,24 @@ def write_deck(
             "U, RF",
             "*EL FILE",
             "S",
-            "*NODE PRINT, NSET=" + FIXED_SET,
-            "RF",
+        ]
+    )
+    if integration_point_stress:
+        lines.extend(
+            [
+                "*EL PRINT, ELSET=" + ELEMENT_SET,
+                "S",
+            ]
+        )
+    if restrain:
+        lines.extend(
+            [
+                "*NODE PRINT, NSET=" + FIXED_SET,
+                "RF",
+            ]
+        )
+    lines.extend(
+        [
             "*END STEP",
             "",
         ]

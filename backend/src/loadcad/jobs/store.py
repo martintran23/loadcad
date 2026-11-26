@@ -1,4 +1,4 @@
-"""Write the Phase 1 job folder. Results do not include a safety factor."""
+"""Write a job folder. A safety factor is stored only with a named decision metric."""
 
 from __future__ import annotations
 
@@ -33,9 +33,10 @@ def sha256_file(path: Path) -> str:
 
 
 def result_record(**fields: object) -> dict[str, object]:
-    """Build a result record that cannot carry a safety factor in Phase 1."""
+    """Build a result record. A safety factor is kept only with a named metric."""
     record = dict(fields)
-    record["decision_metric"] = None
-    record["estimated_safety_factor"] = None
+    if not record.get("decision_metric"):
+        record["decision_metric"] = None
+        record["estimated_safety_factor"] = None
     record["disclaimer"] = DISCLAIMER
     return record
